@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PaisaFlow — Personal Finance Manager</title>
+<meta name="description" content="PaisaFlow is a personal finance manager for tracking income, expenses, budgets, savings goals and financial activity." />
+<meta name="theme-color" content="#4f46e5" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="PaisaFlow — Personal Finance Manager" />
+<meta property="og:description" content="Track income, expenses, budgets and savings goals — stored locally in your browser." />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="/favicon.ico" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-logo">P</div>
+      <div class="brand-text">
+        <div class="brand-name">PaisaFlow</div>
+        <div class="brand-tag">Personal Finance Manager</div>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Main navigation">
+      <button class="nav-item active" data-view="dashboard"><span class="ico" aria-hidden="true">◐</span>Dashboard</button>
+      <button class="nav-item" data-view="transactions"><span class="ico" aria-hidden="true">≡</span>Transactions</button>
+      <button class="nav-item" data-view="analytics"><span class="ico" aria-hidden="true">◔</span>Analytics</button>
+      <button class="nav-item" data-view="budgets"><span class="ico" aria-hidden="true">▤</span>Budgets</button>
+      <button class="nav-item" data-view="categories"><span class="ico" aria-hidden="true">🏷</span>Categories</button>
+      <button class="nav-item" data-view="goals"><span class="ico" aria-hidden="true">★</span>Savings Goals</button>
+      <button class="nav-item" data-view="reports"><span class="ico" aria-hidden="true">▦</span>Reports</button>
+      <button class="nav-item" data-view="calendar"><span class="ico" aria-hidden="true">▣</span>Calendar</button>
+      <button class="nav-item" data-view="settings"><span class="ico" aria-hidden="true">✦</span>Settings</button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="health-mini">
+        <div class="hm-label">Financial Health</div>
+        <div class="hm-score" id="sidebarHealth">— / 100</div>
+        <div class="hm-bar"><div class="hm-fill" id="sidebarHealthBar"></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="sidebar-scrim" id="sidebarScrim"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open navigation menu" title="Open navigation menu" aria-expanded="false" aria-controls="sidebar">☰</button>
+      <span class="topbar-brand" aria-hidden="true">PaisaFlow</span>
+      <div class="search">
+        <span class="search-ico" aria-hidden="true">⌕</span>
+        <input id="globalSearch" aria-label="Search transactions, categories and tags" placeholder="Search transactions, categories, tags…" />
+        <kbd aria-hidden="true" id="searchKbd">Ctrl K</kbd>
+      </div>
+      <div class="top-actions">
+        <div class="today" id="todayDate"></div>
+        <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle light or dark theme" title="Toggle theme"><span class="tt-ico" aria-hidden="true">🌙</span></button>
+        <button class="btn primary" id="quickAdd">＋ Add</button>
+      </div>
+    </header>
+
+    <!-- Views -->
+    <section class="view" id="view-dashboard">
+      <div class="page-head">
+        <div>
+          <h1>Welcome back 👋</h1>
+          <p class="muted" id="greetSub">Here's your money at a glance.</p>
+        </div>
+        <div class="chips" role="group" aria-label="Date range">
+          <button class="chip active" data-range="month">This month</button>
+          <button class="chip" data-range="lastmonth">Last month</button>
+          <button class="chip" data-range="week">This week</button>
+          <button class="chip" data-range="year">This year</button>
+          <button class="chip" data-range="all">All time</button>
+          <button class="chip" data-range="custom">Custom…</button>
+        </div>
+      </div>
+      <div class="custom-range hidden" id="customRange">
+        <label class="field"><span>From</span><input type="date" id="rangeFrom" aria-label="Custom range start date" /></label>
+        <label class="field"><span>To</span><input type="date" id="rangeTo" aria-label="Custom range end date" /></label>
+      </div>
+
+      <!-- First-run welcome -->
+      <div class="card glass welcome hidden" id="welcomeCard">
+        <h2>Welcome to PaisaFlow</h2>
+        <p class="muted">Start by adding your first transaction. Everything stays in this browser — nothing is uploaded.</p>
+        <div class="btn-row">
+          <button class="btn primary" id="welcomeAddTx">Add Transaction</button>
+          <button class="btn ghost" id="welcomeDemo">Explore Demo Data</button>
+        </div>
+      </div>
+
+      <div class="demo-banner hidden" id="demoBanner" role="note">
+        <span>⚠ Demo data is loaded. These entries are samples, not your real records.</span>
+        <button class="btn small" id="removeDemoTop" type="button">Remove demo data</button>
+      </div>
+
+      <div class="cards-grid">
+        <div class="card stat glass">
+          <div class="stat-top"><span class="stat-label">Cash Balance</span><span class="pill">Cash</span></div>
+          <div class="stat-value" data-counter id="statBalance">—</div>
+          <div class="stat-sub muted" id="statBalanceSub">No entries yet</div>
+        </div>
+        <div class="card stat glass income">
+          <div class="stat-top"><span class="stat-label">Total Income</span><span class="pill up" aria-hidden="true">↑</span></div>
+          <div class="stat-value" data-counter id="statIncome">—</div>
+          <div class="stat-sub muted" id="statIncomeSub">0 income entries</div>
+        </div>
+        <div class="card stat glass expense">
+          <div class="stat-top"><span class="stat-label">Total Expense</span><span class="pill down" aria-hidden="true">↓</span></div>
+          <div class="stat-value" data-counter id="statExpense">—</div>
+          <div class="stat-sub muted" id="statExpenseSub">0 expense entries</div>
+        </div>
+        <div class="card stat glass savings">
+          <div class="stat-top"><span class="stat-label">Total Savings</span><span class="pill">%</span></div>
+          <div class="stat-value" data-counter id="statSavings">—</div>
+          <div class="stat-sub muted"><span id="statSavingsRate">—</span> savings rate</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card glass chart-card">
+          <div class="card-head">
+            <h3>Income vs Expense</h3>
+            <span class="muted small" id="ieRangeLabel">Last 6 months (actual)</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chartIE" role="img" aria-label="Income versus expense chart"></canvas></div>
+        </div>
+        <div class="card glass chart-card">
+          <div class="card-head">
+            <h3>Expense by Category</h3>
+            <span class="muted small">Distribution</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chartPie" role="img" aria-label="Expense by category chart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card glass">
+          <div class="card-head"><h3>Financial Health</h3><span class="muted small">0 – 100</span></div>
+          <div class="health">
+            <div class="health-ring">
+              <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle cx="60" cy="60" r="52" class="ring-bg"/>
+                <circle cx="60" cy="60" r="52" class="ring-fg" id="healthRing"/>
+              </svg>
+              <div class="health-score" id="healthScore">—</div>
+            </div>
+            <div class="health-meta">
+              <div class="health-label" id="healthLabel">No data yet</div>
+              <div class="muted small" id="healthNote">Add transactions to calculate your financial health score.</div>
+              <ul class="health-factors muted small" id="healthFactors"></ul>
+            </div>
+          </div>
+          <p class="muted xsmall">Calculated from your own cash-flow activity in the last 90 days. Not financial advice.</p>
+        </div>
+        <div class="card glass">
+          <div class="card-head"><h3>Today & This Month</h3></div>
+          <div class="mini-stats">
+            <div><div class="ms-label muted small">Today</div><div class="ms-val" id="todayExpense">—</div></div>
+            <div><div class="ms-label muted small">This month</div><div class="ms-val" id="monthExpense">—</div></div>
+            <div><div class="ms-label muted small">Avg / day (month)</div><div class="ms-val" id="avgDay">—</div></div>
+            <div><div class="ms-label muted small">Transactions</div><div class="ms-val" id="txCount">0</div></div>
+          </div>
+          <p class="muted xsmall" id="upcomingNote"></p>
+        </div>
+        <div class="card glass">
+          <div class="card-head"><h3>Budget Alerts</h3></div>
+          <div id="budgetAlerts" class="alerts"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card glass chart-card">
+          <div class="card-head"><h3>Monthly Trend</h3><span class="muted small">12 months</span></div>
+          <div class="chart-wrap"><canvas id="chartTrend" role="img" aria-label="Monthly net trend chart"></canvas></div>
+        </div>
+        <div class="card glass chart-card">
+          <div class="card-head"><h3>Weekly Spending</h3><span class="muted small">Last 7 days</span></div>
+          <div class="chart-wrap"><canvas id="chartWeek" role="img" aria-label="Weekly spending chart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card glass">
+        <div class="card-head"><h3>Smart Insights</h3><span class="muted small">From your own data</span></div>
+        <div id="insights" class="insights"></div>
+      </div>
+
+      <div class="card glass">
+        <div class="card-head"><h3>Recent Transactions</h3><button class="btn ghost" data-jump="transactions">View all →</button></div>
+        <div id="recentTx"></div>
+      </div>
+    </section>
+
+    <!-- Transactions -->
+    <section class="view hidden" id="view-transactions">
+      <div class="page-head">
+      <div><h1>Transactions</h1><p class="muted">Search, filter, and manage every entry.</p></div>
+        <div class="btn-row">
+          <button class="btn" id="exportFilteredCSV">Export CSV</button>
+          <button class="btn primary" id="addTxBtn">＋ Add Transaction</button>
+        </div>
+      </div>
+      <button class="btn filters-toggle" id="filtersToggle" aria-expanded="false" aria-controls="txFilters">⛭ Filters</button>
+      <div class="card glass filters" id="txFilters" role="search" aria-label="Transaction filters">
+        <input class="f-search" id="txSearch" aria-label="Search transactions" placeholder="Search title, tag, description…" />
+        <select id="txType" aria-label="Filter by type"><option value="">All types</option><option value="income">Income</option><option value="expense">Expense</option></select>
+        <select id="txCategory" aria-label="Filter by category"><option value="">All categories</option></select>
+        <select id="txMethod" aria-label="Filter by payment method"><option value="">All methods</option></select>
+        <select id="txSort" aria-label="Sort transactions">
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="high">Highest amount</option>
+          <option value="low">Lowest amount</option>
+        </select>
+        <select id="txPreset" aria-label="Quick date range">
+          <option value="">Any date</option>
+          <option value="today">Today</option>
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+          <option value="lastmonth">Last month</option>
+          <option value="year">This year</option>
+        </select>
+        <input type="date" id="txFrom" aria-label="Filter from date" />
+        <input type="date" id="txTo" aria-label="Filter to date" />
+        <input type="number" id="txMin" min="0" step="0.01" inputmode="decimal" aria-label="Minimum amount" placeholder="Min amount" />
+        <input type="number" id="txMax" min="0" step="0.01" inputmode="decimal" aria-label="Maximum amount" placeholder="Max amount" />
+        <select id="txRecur" aria-label="Filter recurring transactions">
+          <option value="">All entries</option>
+          <option value="only">Recurring only</option>
+          <option value="none">One-off only</option>
+        </select>
+        <select id="txWhen" aria-label="Filter actual or upcoming entries">
+          <option value="">Actual + upcoming</option>
+          <option value="actual">Actual only</option>
+          <option value="upcoming">Upcoming only</option>
+        </select>
+        <button class="btn" type="button" id="txResetFilters">Reset filters</button>
+      </div>
+      <div class="filter-summary muted small" id="txFilterSummary" aria-live="polite"></div>
+
+      <div class="card glass">
+        <div class="table-wrap">
+          <table class="tx-table">
+            <thead><tr>
+              <th>Date</th><th>Title</th><th>Category</th><th>Method</th><th>Tags</th><th class="ta-right">Amount</th><th><span class="sr-only">Actions</span></th>
+            </tr></thead>
+            <tbody id="txTbody"></tbody>
+          </table>
+        </div>
+        <div class="tx-cards" id="txCards"></div>
+        <div class="pager" id="pager"></div>
+      </div>
+    </section>
+
+    <!-- Analytics -->
+    <section class="view hidden" id="view-analytics">
+      <div class="page-head"><div><h1>Analytics</h1><p class="muted">Deep dive into your money patterns. Based on actual (past) transactions.</p></div></div>
+      <div class="cards-grid">
+        <div class="card stat glass"><div class="stat-top"><span class="stat-label">Net Balance</span></div><div class="stat-value" id="anNet">—</div><div class="stat-sub muted" id="anNetSub"></div></div>
+        <div class="card stat glass"><div class="stat-top"><span class="stat-label">Top Category</span></div><div class="stat-value" id="anTopCat">—</div><div class="stat-sub muted" id="anTopCatSub"></div></div>
+        <div class="card stat glass"><div class="stat-top"><span class="stat-label">Average / day</span></div><div class="stat-value" id="anAvgDay">—</div><div class="stat-sub muted">Expenses ÷ days in range</div></div>
+        <div class="card stat glass"><div class="stat-top"><span class="stat-label">Entries</span></div><div class="stat-value" id="anCount">0</div><div class="stat-sub muted" id="anRangeSub"></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card glass chart-card"><div class="card-head"><h3>Daily Spending (30d)</h3></div><div class="chart-wrap"><canvas id="chartDaily" role="img" aria-label="Daily spending over the last 30 days chart"></canvas></div></div>
+        <div class="card glass chart-card"><div class="card-head"><h3>Category Breakdown</h3></div><div class="chart-wrap"><canvas id="chartCatBar" role="img" aria-label="Category breakdown chart"></canvas></div></div>
+      </div>
+      <div class="card glass"><div class="card-head"><h3>Smart Predictions</h3></div><div id="predictions" class="insights"></div></div>
+    </section>
+
+    <!-- Budgets -->
+    <section class="view hidden" id="view-budgets">
+      <div class="page-head"><div><h1>Budgets</h1><p class="muted">Set limits, stay in control.</p></div><button class="btn primary" id="addBudgetBtn">＋ New Budget</button></div>
+      <div class="cards-grid" id="budgetsGrid"></div>
+    </section>
+
+    <!-- Categories -->
+    <section class="view hidden" id="view-categories">
+      <div class="page-head">
+        <div><h1>Categories</h1><p class="muted">Add, rename and reorder the categories used across every transaction.</p></div>
+        <button class="btn" id="resetCats">Reset to defaults</button>
+      </div>
+      <div class="grid-2">
+        <div class="card glass">
+          <div class="card-head"><h3>Expense categories</h3><span class="muted small" id="catCountExpense"></span></div>
+          <form class="cat-add" data-cat-type="expense">
+            <input aria-label="New expense category name" placeholder="New expense category…" maxlength="24" required />
+            <button class="btn primary" type="submit">Add</button>
+          </form>
+          <ul class="cat-list" id="catListExpense"></ul>
+        </div>
+        <div class="card glass">
+          <div class="card-head"><h3>Income categories</h3><span class="muted small" id="catCountIncome"></span></div>
+          <form class="cat-add" data-cat-type="income">
+            <input aria-label="New income category name" placeholder="New income category…" maxlength="24" required />
+            <button class="btn primary" type="submit">Add</button>
+          </form>
+          <ul class="cat-list" id="catListIncome"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Goals -->
+    <section class="view hidden" id="view-goals">
+      <div class="page-head"><div><h1>Savings Goals</h1><p class="muted">Turn dreams into deadlines.</p></div><button class="btn primary" id="addGoalBtn">＋ New Goal</button></div>
+      <div class="cards-grid" id="goalsGrid"></div>
+    </section>
+
+    <!-- Reports -->
+    <section class="view hidden" id="view-reports">
+      <div class="page-head"><div><h1>Reports</h1><p class="muted">Monthly summary and exports.</p></div>
+        <div class="btn-row">
+          <button class="btn" id="exportCSV">Export CSV</button>
+          <button class="btn" id="exportJSON">Export JSON</button>
+          <button class="btn" id="printReport">Print Report</button>
+          <button class="btn primary" id="pdfReport">Download PDF</button>
+        </div>
+      </div>
+      <div class="card glass" id="monthlyReport"></div>
+    </section>
+
+    <!-- Calendar -->
+    <section class="view hidden" id="view-calendar">
+      <div class="page-head"><div><h1>Calendar</h1><p class="muted">Click any day for a breakdown.</p></div>
+        <div class="btn-row">
+          <button class="btn" id="calPrev" aria-label="Previous month">‹</button>
+          <div class="cal-title" id="calTitle"></div>
+          <button class="btn" id="calNext" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card glass">
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+        <div class="card glass" id="calDetail">
+          <div class="card-head"><h3>Select a date</h3></div>
+          <p class="muted">Click a day to see its transactions.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section class="view hidden" id="view-settings">
+      <div class="page-head"><div><h1>Settings</h1><p class="muted">Preferences and data.</p></div></div>
+      <div class="grid-2">
+        <div class="card glass settings-card">
+          <div class="card-head"><h3>Preferences</h3><span class="muted small">Display options</span></div>
+          <div class="settings-list">
+            <label class="field"><span>Currency</span>
+              <select id="setCurrency">
+                <option value="Rs.">Rs. (NPR)</option>
+                <option value="$">$ (USD)</option>
+                <option value="€">€ (EUR)</option>
+                <option value="₹">₹ (INR)</option>
+                <option value="£">£ (GBP)</option>
+                <option value="¥">¥ (JPY)</option>
+              </select>
+            </label>
+            <label class="field"><span>Date format</span>
+              <select id="setDateFmt">
+                <option value="DMY">DD/MM/YYYY</option>
+                <option value="MDY">MM/DD/YYYY</option>
+                <option value="YMD">YYYY-MM-DD</option>
+              </select>
+            </label>
+            <label class="field"><span>Theme</span>
+              <select id="setTheme"><option value="light">Light</option><option value="dark">Dark</option></select>
+            </label>
+          </div>
+        </div>
+        <div class="card glass settings-card">
+          <div class="card-head"><h3>Data Management</h3><span class="muted small">Stored in this browser</span></div>
+          <div class="settings-list">
+            <div class="setting-row">
+              <div class="setting-copy"><strong>Backup</strong><span class="muted small">Download a JSON copy of everything.</span></div>
+              <button class="btn" id="backupBtn">Backup (JSON)</button>
+            </div>
+            <div class="setting-row">
+              <div class="setting-copy"><strong>Restore backup</strong><span class="muted small">Import a previous JSON backup (merges safely, undoable).</span></div>
+              <button class="btn" id="restoreBtn">Restore</button>
+              <input type="file" id="restoreFile" accept="application/json" hidden />
+            </div>
+            <div class="setting-row">
+              <div class="setting-copy"><strong>Import CSV</strong><span class="muted small">Add transactions from a CSV export. Duplicates are skipped and you can undo.</span></div>
+              <label class="field inline-field"><span class="sr-only">Import mode</span>
+                <select id="importMode" aria-label="CSV import mode">
+                  <option value="merge">Merge with existing</option>
+                  <option value="replace">Replace all transactions</option>
+                </select>
+              </label>
+              <button class="btn" id="importCsvBtn">Import CSV</button>
+              <input type="file" id="importCsvFile" accept=".csv,text/csv" hidden />
+            </div>
+            <div class="setting-row">
+              <div class="setting-copy"><strong>Demo data</strong><span class="muted small">Sample entries clearly marked as demo, removable at any time.</span></div>
+              <button class="btn" id="seedDemo">Load demo data</button>
+              <button class="btn" id="removeDemo">Remove demo data</button>
+            </div>
+            <div class="setting-row danger-zone">
+              <div class="setting-copy"><strong>Clear all data</strong><span class="muted small">Permanently deletes transactions, budgets, goals and categories.</span></div>
+              <button class="btn danger" id="clearAll">Clear all data</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card glass">
+        <div class="card-head"><h3>About PaisaFlow &amp; your data</h3></div>
+        <p class="muted small">Your financial data is stored locally in this browser and is not automatically uploaded to a remote server.</p>
+        <p class="muted small">Clearing browser or site data may permanently remove your records. Create regular backups.</p>
+        <p class="muted small">PaisaFlow is an informational tool. It does not provide personalized financial advice.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Transaction modal -->
+  <div class="modal" id="txModal" role="dialog" aria-modal="true" aria-labelledby="txModalTitle" aria-hidden="true">
+    <div class="modal-card glass">
+      <div class="modal-head">
+        <div class="modal-titles">
+          <h3 id="txModalTitle">Add Transaction</h3>
+          <p class="muted small">Record your income or expense</p>
+        </div>
+        <button type="button" class="icon-btn" data-close aria-label="Close dialog">✕</button>
+      </div>
+      <form id="txForm" class="form">
+        <div class="modal-body">
+          <label class="field"><span>Transaction type</span>
+            <select id="fType" required><option value="expense">Expense</option><option value="income">Income</option></select>
+          </label>
+          <label class="field"><span>Amount</span><input type="number" step="0.01" min="0.01" id="fAmount" required placeholder="0.00" inputmode="decimal" /></label>
+          <label class="field"><span>Title</span><input id="fTitle" required maxlength="80" placeholder="What was this transaction?" /></label>
+          <div class="form-grid-2">
+            <label class="field"><span>Category</span><select id="fCategory" required></select></label>
+            <label class="field"><span>Payment Method</span><select id="fMethod" required></select></label>
+          </div>
+          <div class="form-grid-2">
+            <label class="field"><span>Date</span><input type="date" id="fDate" required /></label>
+            <label class="field"><span>Tags (comma separated)</span><input id="fTags" placeholder="essentials, weekly" /></label>
+          </div>
+          <label class="field"><span>Description</span><textarea id="fDesc" rows="2" placeholder="Optional description…" maxlength="500"></textarea></label>
+          <fieldset class="field recur-box">
+            <legend>Recurring</legend>
+            <div class="form-grid-2">
+              <label class="field"><span>Repeat</span>
+                <select id="fRecur" aria-describedby="recurHelp">
+                  <option value="none">Does not repeat</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="yearly">Yearly</option>
+                  <option value="daily">Daily</option>
+                  <option value="custom">Custom (every N days)</option>
+                </select>
+              </label>
+              <label class="field hidden" id="fRecurEveryWrap"><span>Every (days)</span><input type="number" id="fRecurEvery" min="1" max="365" value="14" /></label>
+            </div>
+            <label class="field hidden" id="fRecurUntilWrap"><span>Repeat until (optional)</span><input type="date" id="fRecurUntil" /></label>
+            <p class="muted small" id="recurHelp">Upcoming occurrences are projected for the next 6 months. They are shown as “upcoming” and are never counted in your actual balance, income, expenses or health score until their date arrives.</p>
+          </fieldset>
+          <div class="field">
+            <span>Receipt (optional)</span>
+            <div class="dropzone" id="fDropzone" tabindex="0" role="button" aria-label="Upload receipt image. Drag and drop or press Enter to browse.">
+              <input type="file" id="fReceipt" accept="image/*" hidden />
+              <div class="dz-inner" id="fDzInner">
+                <span class="dz-ico" aria-hidden="true">🧾</span>
+                <div class="dz-text"><strong>Drop receipt here</strong><span class="muted small">or click to browse · PNG, JPG up to 2MB</span></div>
+              </div>
+              <div class="dz-preview hidden" id="fDzPreview">
+                <img id="fDzThumb" alt="Receipt preview" />
+                <div class="dz-meta"><span id="fDzName" class="dz-name"></span><span class="muted small" id="fDzSize"></span></div>
+                <button type="button" class="icon-btn" id="fDzClear" aria-label="Remove receipt">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn" data-close>Cancel</button>
+          <button type="submit" class="btn primary" id="txSave" disabled>Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="budgetModal" role="dialog" aria-modal="true" aria-labelledby="budgetModalTitle" aria-hidden="true">
+    <div class="modal-card glass">
+      <div class="modal-head">
+        <div class="modal-titles">
+          <h3 id="budgetModalTitle">New Budget</h3>
+          <p class="muted small">Set a monthly spending limit</p>
+        </div>
+        <button type="button" class="icon-btn" data-close aria-label="Close dialog">✕</button>
+      </div>
+      <form id="budgetForm" class="form">
+        <div class="modal-body">
+          <label class="field"><span>Category</span><select id="bCategory" required></select></label>
+          <label class="field"><span>Monthly limit</span><input id="bAmount" type="number" min="0.01" step="0.01" required placeholder="10000" inputmode="decimal" /></label>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary">Save Budget</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="goalModal" role="dialog" aria-modal="true" aria-labelledby="goalModalTitle" aria-hidden="true">
+    <div class="modal-card glass">
+      <div class="modal-head">
+        <div class="modal-titles">
+          <h3 id="goalModalTitle">New Goal</h3>
+          <p class="muted small">Turn a dream into a savings target</p>
+        </div>
+        <button type="button" class="icon-btn" data-close aria-label="Close dialog">✕</button>
+      </div>
+      <form id="goalForm" class="form">
+        <div class="modal-body">
+          <label class="field"><span>Goal name</span><input id="gName" required maxlength="60" placeholder="New Laptop" /></label>
+          <div class="form-grid-2">
+            <label class="field"><span>Target amount</span><input id="gTarget" type="number" min="0.01" step="0.01" required placeholder="120000" inputmode="decimal" /></label>
+            <label class="field"><span>Already saved</span><input id="gSaved" type="number" min="0" step="0.01" value="0" inputmode="decimal" /></label>
+          </div>
+          <label class="field"><span>Target date (optional)</span><input id="gDate" type="date" /></label>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary">Save Goal</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reusable confirm / alert / prompt dialog (replaces native alert/confirm/prompt) -->
+  <div class="modal dialog" id="appDialog" role="dialog" aria-modal="true" aria-labelledby="appDialogTitle" aria-describedby="appDialogMsg" aria-hidden="true">
+    <div class="modal-card glass dialog-card">
+      <div class="modal-head">
+        <div class="modal-titles">
+          <h3 id="appDialogTitle"><span class="dialog-ico" id="appDialogIco" aria-hidden="true"></span><span id="appDialogTitleText">Are you sure?</span></h3>
+          <p class="muted small" id="appDialogSub"></p>
+        </div>
+        <button type="button" class="icon-btn" id="appDialogClose" aria-label="Close dialog">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="appDialogMsg" class="dialog-msg"></div>
+        <ul id="appDialogList" class="dialog-list hidden"></ul>
+        <label class="field hidden" id="appDialogInputWrap"><span id="appDialogInputLabel">Value</span><input id="appDialogInput" /></label>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn" id="appDialogCancel">Cancel</button>
+        <button type="button" class="btn primary" id="appDialogConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading modal -->
+  <div class="modal loading-modal" id="loadingModal" role="dialog" aria-modal="true" aria-live="assertive" aria-labelledby="loadingText" aria-hidden="true">
+    <div class="modal-card glass loading-card">
+      <div class="spinner" aria-hidden="true"></div>
+      <div id="loadingText">Working…</div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" role="region" aria-label="Notifications" aria-live="polite" aria-atomic="false"></div>
+
+  <button class="fab" id="fabAdd" aria-label="Add transaction" title="Add transaction">＋</button>
+
+  <script src="script.js"></script>
+</body>
+</html>

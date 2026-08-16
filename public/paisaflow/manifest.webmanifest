@@ -1,0 +1,13 @@
+{
+  "name": "PaisaFlow — Personal Finance Manager",
+  "short_name": "PaisaFlow",
+  "description": "Track income, expenses, budgets, savings goals — stored locally in your browser.",
+  "start_url": "/paisaflow/index.html",
+  "scope": "/paisaflow/",
+  "display": "standalone",
+  "background_color": "#0b0d1a",
+  "theme_color": "#4f46e5",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }
+  ]
+}
