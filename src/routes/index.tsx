@@ -1,9 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
+
+import { getCurrentUser } from "@/lib/auth.functions";
 
 const APP_URL = "/paisaflow/index.html";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: async () => {
+    const user = await getCurrentUser();
+    if (!user) {
+      throw redirect({ to: "/login" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "PaisaFlow — Personal Finance Manager" },
