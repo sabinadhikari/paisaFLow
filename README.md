@@ -157,7 +157,7 @@ I'm interested in building practical software, web applications, and cybersecuri
 ### Connect with me
 
 * 🌐 Portfolio: *Coming soon*
-* 💼 LinkedIn: *Add your LinkedIn URL*
+* 💼 LinkedIn: *[Add your LinkedIn URL](https://www.linkedin.com/in/sabin-adhikari-486260437/)*
 * 🐙 GitHub: [@SabinAdhikari](https://github.com/Sabinadhikari)
 
 ---
